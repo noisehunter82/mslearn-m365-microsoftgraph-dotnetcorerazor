@@ -21,7 +21,7 @@ namespace DotNetCoreRazor_MSGraph.Pages
         private readonly GraphProfileClient _graphProfileClient;
         private MailboxSettings MailboxSettings { get; set; }
 
-        public IEnumerable<Event> Events  { get; private set; }
+        public IEnumerable<Event> Events { get; private set; }
 
         public CalendarModel(ILogger<CalendarModel> logger, GraphCalendarClient graphCalendarClient, GraphProfileClient graphProfileClient)
         {
@@ -32,21 +32,25 @@ namespace DotNetCoreRazor_MSGraph.Pages
 
         public async Task OnGetAsync()
         {
-            // Remove this code
-           await Task.CompletedTask;
+            MailboxSettings = await _graphCalendarClient.GetUserMailboxSettings();
+            var userTimeZone = (String.IsNullOrEmpty(MailboxSettings.TimeZone))
+                ? "Pacific Standard Time"
+                : MailboxSettings.TimeZone;
+            Events = await _graphCalendarClient.GetEvents(userTimeZone);
         }
 
         public string FormatDateTimeTimeZone(DateTimeTimeZone value)
         {
             // Parse the date/time string from Graph into a DateTime
             var graphDatetime = value.DateTime;
-            if (DateTime.TryParse(graphDatetime, out DateTime dateTime)) 
+            if (DateTime.TryParse(graphDatetime, out DateTime dateTime))
             {
                 var dateTimeFormat = $"{MailboxSettings.DateFormat} {MailboxSettings.TimeFormat}".Trim();
-                if (!String.IsNullOrEmpty(dateTimeFormat)) {
+                if (!String.IsNullOrEmpty(dateTimeFormat))
+                {
                     return dateTime.ToString(dateTimeFormat);
                 }
-                else 
+                else
                 {
                     return $"{dateTime.ToShortDateString()} {dateTime.ToShortTimeString()}";
                 }

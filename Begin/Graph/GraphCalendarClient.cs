@@ -17,17 +17,49 @@ namespace DotNetCoreRazor_MSGraph.Graph
         private readonly ILogger<GraphCalendarClient> _logger = null;
         private readonly GraphServiceClient _graphServiceClient = null;
 
-        public GraphCalendarClient()
+        public GraphCalendarClient(ILogger<GraphCalendarClient> logger, GraphServiceClient graphServiceClient)
         {
-            // Remove this code
-            _ = _logger;
-            _ = _graphServiceClient;
+            _logger = logger;
+            _graphServiceClient = graphServiceClient;
         }
 
         public async Task<IEnumerable<Event>> GetEvents(string userTimeZone)
         {
-            // Remove this code
-            return await Task.FromResult<IEnumerable<Event>>(null);
+            _logger.LogInformation($"User timezone: {userTimeZone}");
+            // Configure a calendar view for the current week
+            var startOfWeek = DateTime.Now;
+            var endOfWeek = startOfWeek.AddDays(7);
+            var viewOptions = new List<QueryOption>
+            {
+            new QueryOption("startDateTime", startOfWeek.ToString("o")),
+            new QueryOption("endDateTime", endOfWeek.ToString("o"))
+            };
+
+            try
+            {
+                // Use GraphServiceClient to call Me.CalendarView
+                var calendarEvents = await _graphServiceClient
+                    .Me
+                    .CalendarView
+                    .Request(viewOptions)
+                    .Header("Prefer", $"outlook.timezone=\"{userTimeZone}\"")
+                    .Select(evt => new
+                    {
+                        evt.Subject,
+                        evt.Organizer,
+                        evt.Start,
+                        evt.End
+                    })
+                    .OrderBy("start/DateTime")
+                    .GetAsync();
+
+                return calendarEvents;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error calling Graph /me/calendaview: {ex.Message}");
+                throw;
+            }
         }
 
         // Used for timezone settings related to calendar

@@ -38,19 +38,32 @@ namespace DotNetCoreRazor_MSGraph.Pages
 
         public async Task OnGetAsync()
         {
-            // Remove this code
-            await Task.CompletedTask;
+            Files = await _graphFilesClient.GetFiles();
         }
 
         public async Task OnPostAsync()
         {
-            // Remove this code
-            await Task.CompletedTask;
+            if (UploadedFile == null || UploadedFile.Length == 0)
+            {
+                return;
+            }
+
+            _logger.LogInformation($"Uploading {UploadedFile.FileName}.");
+
+            using (var stream = new MemoryStream())
+            {
+                await UploadedFile.CopyToAsync(stream);
+                await _graphFilesClient.UploadFile(
+                UploadedFile.FileName, stream);
+            }
+
+            await OnGetAsync();
         }
 
-        public async Task<FileStreamResult> OnGetDownloadFile(string id, string name) {
-            // Remove this code
-            return await Task.FromResult<FileStreamResult>(null);
+        public async Task<FileStreamResult> OnGetDownloadFile(string id, string name)
+        {
+            var stream = await _graphFilesClient.DownloadFile(id);
+            return File(stream, MediaTypeNames.Application.Octet, name);
         }
     }
 }
